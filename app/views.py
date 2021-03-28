@@ -1,16 +1,17 @@
 from flask import Blueprint, request, Response
 from controllers.couriers_controller import create_couriers, update_courier
 from controllers.orders_controller import create_orders, assign_orders, complete_order
+import json
 
 views = Blueprint("api", __name__)
 
 @views.route("/couriers", methods=["POST"])
 def load_couriers_list():
     request_data = request.get_json()['data']
-    status, result_json = create_couriers(request_data)
-    if status == 'err':
-        result_json = {"validation_error": result_json}
-    return result_json
+    status, result = create_couriers(request_data)
+    if status == 400:
+        result = {"validation_error": result}
+    return Response(json.dumps(result), status, mimetype='application/json')
 
 @views.route("/couriers/<courier_id>", methods=["PATCH"])
 def update_courier_data(courier_id):

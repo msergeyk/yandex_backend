@@ -21,11 +21,11 @@ def create_couriers(data):
         session.commit()
         result_list = [{"id": x} for x in new_ids]
         result = {"couriers": result_list}
-        status = 'ok'
+        status = 201
     else:
         result_list = [{"id": x} for x in new_set.intersection(existing_set)]
         result = {"couriers": result_list}
-        status = 'err'
+        status = 400
     session.close()
     return (status, result)
 
