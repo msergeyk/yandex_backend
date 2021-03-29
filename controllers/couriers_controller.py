@@ -5,29 +5,35 @@ from sqlalchemy.dialects.postgresql import TSRANGE, ARRAY
 from controllers.utils import process_str_list, intersect, process_dti
 
 
-def create_couriers(data):
+def validate_courier_id(data):
     session = Session()
     existing_ids = session.query(Courier.courier_id).all()
     existing_set = set([x[0] for x in existing_ids])
     new_ids = [c['courier_id'] for c in data]
     new_set = set(new_ids)
-    if len(new_set.intersection(existing_set)) == 0:
-        couriers_list = [Courier(courier_id=c['courier_id'],
-                                courier_type=c['courier_type'],
-                                regions=c['regions'],
-            working_hours=cast(process_str_list(c['working_hours']), ARRAY(TSRANGE))
-            ) for c in data]
-        session.add_all(couriers_list)
-        session.commit()
-        result_list = [{"id": x} for x in new_ids]
-        result = {"couriers": result_list}
-        status = 201
-    else:
-        result_list = [{"id": x} for x in new_set.intersection(existing_set)]
-        result = {"couriers": result_list}
-        status = 400
+    intersection = new_set.intersection(existing_set)
+    result = []
+    if len(intersection) != 0:
+        result = [{"id": x,
+            "message": "id already exists"} for x in intersection]
     session.close()
-    return (status, result)
+    return result
+
+
+def create_couriers(data):
+    session = Session()
+    new_ids = [c['courier_id'] for c in data]
+    couriers_list = [Courier(courier_id=c['courier_id'],
+                            courier_type=c['courier_type'],
+                            regions=c['regions'],
+        working_hours=cast(process_str_list(c['working_hours']), ARRAY(TSRANGE))
+        ) for c in data]
+    session.add_all(couriers_list)
+    session.commit()
+    result_list = [{"id": x} for x in new_ids]
+    result = {"couriers": result_list}
+    session.close()
+    return result
 
 def update_courier(data, courier_id):
     session = Session()
@@ -68,15 +74,23 @@ def update_courier(data, courier_id):
                         Order.assign_time: None},
                         synchronize_session=False)
                 session.commit()
-        status = 'ok'
+        status = 200
         result = {"courier_id": courier.courier_id,
                   "courier_type": courier.courier_type,
                   "regions": courier.regions,
                   "working_hours": [process_dti(x) for x in courier.working_hours]
                   }
     else:
-        status = 'err'
+        status = 404
         result=[]
     session.close()
     return (status, result)
 
+
+def is_courier_id_exists(courier_id):
+    session = Session()
+    c = session.query(Courier
+        ).filter(Courier.courier_id == courier_id).first()
+    if c:
+        return True
+    return False

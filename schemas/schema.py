@@ -6,6 +6,20 @@ from datetime import datetime
 import dateutil.parser
 
 
+def validate_hours(s):
+    if len(s) != 11:
+        raise ValidationError("Incorrect time segment format")
+    if s[5] != '-':
+        raise ValidationError("Incorrect time segment format")
+    try:
+        t1 = datetime.strptime(s[:5], '%H:%M')
+        t2 = datetime.strptime(s[6:], '%H:%M')
+        if t1 >= t2:
+            raise ValidationError("Incorrect time segment format")
+    except:
+        raise ValidationError("Incorrect time segment format")
+
+
 class CourierSchema(Schema):
     courier_id = Int(validate=Range(min=1), strict=True, required=True)
     courier_type = Str(validate=OneOf(['foot', 'bike', 'car']), strict=True, required=True)
@@ -48,18 +62,6 @@ class OrderCompleteSchema(Schema):
             raise ValidationError("Incorrect timestampt")
 
 
-def validate_hours(s):
-    if len(s) != 11:
-        raise ValidationError("Incorrect time segment format")
-    if s[5] != '-':
-        raise ValidationError("Incorrect time segment format")
-    try:
-        t1 = datetime.strptime(s[:5], '%H:%M')
-        t2 = datetime.strptime(s[6:], '%H:%M')
-        if t1 >= t2:
-            raise ValidationError("Incorrect time segment format")
-    except:
-        raise ValidationError("Incorrect time segment format")
 
 
 
@@ -69,14 +71,12 @@ def validate_hours(s):
 
 
 
-
-
-try:
+'''try:
     result = CourierSchema().load({"courier_id": 1,
                                    "courier_type": 'foot',
-                                   "regions": [1], 
+                                   "regions": [], 
                                    "working_hours": ['12:00-14:00']})
-    print(result)
+    #print(result)
 except ValidationError as err:
     print(err.messages)
-    print(err.valid_data)
+    #print(err.valid_data)'''

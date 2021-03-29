@@ -7,29 +7,35 @@ from datetime import datetime
 import dateutil.parser
 
 
-def create_orders(data):
+def validate_order_id(data):
     session = Session()
     existing_ids = session.query(Order.order_id).all()
     existing_set = set([x[0] for x in existing_ids])
     new_ids = [c['order_id'] for c in data]
     new_set = set(new_ids)
-    if len(new_set.intersection(existing_set)) == 0:
-        orders_list = [Order(order_id=o['order_id'],
-                            weight=o['weight'],
-                            region=o['region'],
-        delivery_hours=cast(process_str_list(o['delivery_hours']), ARRAY(TSRANGE))
-                        ) for o in data]
-        session.add_all(orders_list)
-        session.commit()
-        result_list = [{"id": x} for x in new_ids]
-        result = {"orders": result_list}
-        status = 'ok'
-    else:
-        result_list = [{"id": x} for x in new_set.intersection(existing_set)]
-        result = {"orders": result_list}
-        status = 'err'
+    intersection = new_set.intersection(existing_set)
+    result = []
+    if len(intersection) != 0:
+        result = [{"id": x,
+            "message": "id already exists"} for x in intersection]
     session.close()
-    return (status, result)
+    return result
+
+
+def create_orders(data):
+    session = Session()
+    new_ids = [c['order_id'] for c in data]
+    orders_list = [Order(order_id=o['order_id'],
+                        weight=o['weight'],
+                        region=o['region'],
+    delivery_hours=cast(process_str_list(o['delivery_hours']), ARRAY(TSRANGE))
+                        ) for o in data]
+    session.add_all(orders_list)
+    session.commit()
+    result_list = [{"id": x} for x in new_ids]
+    result = {"orders": result_list}
+    session.close()
+    return result
 
 
 def assign_orders(courier_id):
@@ -78,6 +84,7 @@ def complete_order(courier_id, order_id, complete_time):
     order = session.query(Order).filter(Order.order_id == order_id,
                                         Order.cour_id == courier_id).first()
     if order:
+        status = 200
         result = {"order_id": order.order_id}
         if order.status != 'completed':
             complete_time = dateutil.parser.isoparse(complete_time).astimezone()
@@ -86,7 +93,9 @@ def complete_order(courier_id, order_id, complete_time):
             ).update({Order.status: 'completed',
                       Order.complete_time: complete_time},
                      synchronize_session=False)
+    else:
+        status = 400
     session.commit()
     session.close()
-    return result
+    return (status, result)
 
