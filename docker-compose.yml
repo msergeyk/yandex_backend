@@ -2,11 +2,27 @@ version: "3.8"
 
 services:
   db:
-    image: postgres:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile-db
     env_file: .env
     ports:
       - 0.0.0.0:${POSTGRES_EXTERNAL_PORT}:5432
-    restart: 'no'
+    restart: unless-stopped
+    logging:
+      driver: syslog
+      options:
+        tag: "{{.Name}}/{{.ImageName}}/{{.ID}}/"
+  
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - 0.0.0.0:${APP_EXTERNAL_PORT}:5000
+    restart: unless-stopped
     logging:
       driver: syslog
       options:
