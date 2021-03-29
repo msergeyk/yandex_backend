@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, String, ARRAY, Float
-from sqlalchemy_utils import DateTimeRangeType, IntRangeType
+from sqlalchemy import Column, Integer, String, ARRAY
+from sqlalchemy_utils import DateTimeRangeType
 from sqlalchemy.ext.hybrid import hybrid_property
 from models.base import Base
 
