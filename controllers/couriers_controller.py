@@ -108,4 +108,5 @@ def is_courier_id_exists(courier_id):
     c = session.query(Courier).filter(Courier.courier_id == courier_id).first()
     if c:
         return True
+    session.close()
     return False
